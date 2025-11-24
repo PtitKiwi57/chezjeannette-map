@@ -64,12 +64,7 @@
 
         markersById[h.id] = marker;
       });
-
-      if (habitats.length) {
-        const bounds = new mapboxgl.LngLatBounds();
-        habitats.forEach(h => bounds.extend([h.lng, h.lat]));
-        map.fitBounds(bounds, { padding: 50 });
-      }
+      
     }
 
     function focusHabitat(habitatId) {
