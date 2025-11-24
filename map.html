@@ -2,93 +2,191 @@
 <html>
 <head>
   <meta charset="UTF-8" />
+
+  <!-- MAPBOX -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-  <style>
-    body, html { margin:0; padding:0; }
-    #map { width:100%; height:100vh; }
 
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* --- MARKER PREMIUM --- */
     .marker {
-      width: 22px;
-      height: 22px;
-      background-color: #6B4EFF; /* violet Chez Jeannette */
+      width: 26px;
+      height: 26px;
+      background-color: #6B4EFF;
       border-radius: 50%;
       border: 3px solid white;
-      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+      box-shadow: 0 0 12px rgba(0,0,0,0.25);
       cursor: pointer;
+      position: relative;
+      transition: transform 0.2s ease;
     }
 
-    .marker-popup {
-      padding: 8px 10px;
-      font-family: system-ui, sans-serif;
-      font-size: 13px;
+    .marker:hover {
+      transform: scale(1.15);
     }
-    .marker-title { font-weight:bold; margin-bottom:4px; }
-    .marker-city { font-size:12px; opacity:0.8; }
+
+    /* Halo animé */
+    .marker::after {
+      content: "";
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: rgba(107, 78, 255, 0.25);
+      animation: haloPulse 2.5s infinite ease-out;
+      pointer-events: none;
+    }
+
+    @keyframes haloPulse {
+      0%   { transform: scale(0.3); opacity: 0.45; }
+      70%  { transform: scale(1); opacity: 0; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+
+    /* POPUP */
+    .mapboxgl-popup-content {
+      font-family: system-ui, sans-serif;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      background: white;
+      color: #333;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    }
+
+    .marker-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .marker-city {
+      opacity: 0.7;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
   </style>
 </head>
+
 <body>
   <div id="map"></div>
 
   <script>
+    console.log("📍 map.html loaded");
+
     mapboxgl.accessToken = "pk.eyJ1IjoicHRpdGtpd2kiLCJhIjoiY21pZG9uZGkwMDZ4MzJpcXZ0dnVoM2YwNSJ9.AbdFkhkiESdeKA7XNTUQNQ";
 
     let map;
     let markersById = {};
 
+    // --- INIT MAP ---
     function initMap() {
+      console.log("🗺️ Initialisation de la carte…");
       map = new mapboxgl.Map({
         container: "map",
         style: "mapbox://styles/mapbox/light-v11",
-        center: [2.5, 47],
+        center: [2.5, 47], // Vue France
         zoom: 5
       });
     }
 
+    // --- RENDU DES HABITATS ---
     function renderHabitats(habitats) {
+      console.log("📌 renderHabitats →", habitats);
+
+      // Supprimer les anciens markers
       Object.values(markersById).forEach(m => m.remove());
       markersById = {};
 
       habitats.forEach(h => {
+        console.log("➡️ Ajout marker:", h);
+
         const el = document.createElement("div");
         el.className = "marker";
 
         const popupContent = `
-          <div class="marker-popup">
+          <div>
             <div class="marker-title">${h.title}</div>
             <div class="marker-city">${h.city || ""}</div>
             <div>${h.shortDescription || ""}</div>
           </div>
         `;
 
-        const popup = new mapboxgl.Popup({ offset: 15 }).setHTML(popupContent);
+        const popup = new mapboxgl.Popup({ offset: 15 })
+          .setHTML(popupContent);
 
         const marker = new mapboxgl.Marker(el)
           .setLngLat([h.lng, h.lat])
           .setPopup(popup)
           .addTo(map);
 
+        // Marker cliqué → envoie message à Wix
         el.addEventListener("click", () => {
-          parent.postMessage({ type: "OPEN_HABITAT", habitatId: h.id }, "*");
+          console.log("🟣 Marker cliqué:", h.id);
+          parent.postMessage({
+            type: "OPEN_HABITAT",
+            habitatId: h.id,
+            slug: h.slug
+          }, "*");
         });
 
         markersById[h.id] = marker;
       });
-      
+
+      console.log("🎉 Tous les markers ont été ajoutés.");
     }
 
+    // --- FOCUS HABITAT ---
     function focusHabitat(habitatId) {
+      console.log("🔎 focusHabitat:", habitatId);
+
       const marker = markersById[habitatId];
       if (marker) {
-        map.flyTo({ center: marker.getLngLat(), zoom: 13 });
+        const lngLat = marker.getLngLat();
+        console.log("📍 flyTo:", lngLat);
+
+        map.flyTo({
+          center: lngLat,
+          zoom: 13
+        });
+
         marker.togglePopup();
+
+        // Petit effet POP
+        marker.getElement().style.transform = "scale(1.35)";
+        setTimeout(() =>
+          marker.getElement().style.transform = "scale(1)"
+        , 500);
+      } else {
+        console.warn("⚠️ Marker introuvable pour:", habitatId);
       }
     }
 
+    // --- LISTENER MESSAGE ---
     window.addEventListener("message", (event) => {
+      console.log("📩 MESSAGE REÇU :", event.data);
+
       const { type, habitats, habitatId } = event.data || {};
-      if (type === "INIT_HABITATS") renderHabitats(habitats || []);
-      if (type === "FOCUS_HABITAT") focusHabitat(habitatId);
+
+      if (type === "INIT_HABITATS") {
+        console.log("🚀 INIT_HABITATS reçu");
+        renderHabitats(habitats);
+      }
+
+      if (type === "FOCUS_HABITAT") {
+        focusHabitat(habitatId);
+      }
     });
 
     initMap();
