@@ -3,27 +3,33 @@
 <head>
   <meta charset="UTF-8" />
 
-  <!-- MAPBOX -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
 
   <style>
-    body, html {
+    html, body {
       margin: 0;
       padding: 0;
-    }
-    #map {
       width: 100%;
       height: 100%;
+      display: flex;
     }
 
-    /* --- MARKER PREMIUM --- */
+    /* Le container de la map a une VRAIE HAUTEUR FIXE */
+    #map {
+      flex: 1;
+      min-height: 700px;   /* 👈 hauteur stable Wix Studio */
+      width: 100%;
+      background: #eee;
+    }
+
+    /* MARKER STYLE */
     .marker {
       width: 26px;
       height: 26px;
       background-color: #6B4EFF;
       border-radius: 50%;
-      border: 3px solid white;
+      border: 3px solid #fff;
       box-shadow: 0 0 12px rgba(0,0,0,0.25);
       cursor: pointer;
       position: relative;
@@ -34,7 +40,6 @@
       transform: scale(1.15);
     }
 
-    /* Halo animé */
     .marker::after {
       content: "";
       position: absolute;
@@ -45,7 +50,6 @@
       border-radius: 50%;
       background: rgba(107, 78, 255, 0.25);
       animation: haloPulse 2.5s infinite ease-out;
-      pointer-events: none;
     }
 
     @keyframes haloPulse {
@@ -54,7 +58,6 @@
       100% { transform: scale(1); opacity: 0; }
     }
 
-    /* POPUP */
     .mapboxgl-popup-content {
       font-family: system-ui, sans-serif;
       padding: 12px 14px;
@@ -62,19 +65,6 @@
       font-size: 13px;
       background: white;
       color: #333;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-    }
-
-    .marker-title {
-      font-weight: bold;
-      margin-bottom: 4px;
-      font-size: 14px;
-    }
-
-    .marker-city {
-      opacity: 0.7;
-      font-size: 12px;
-      margin-bottom: 4px;
     }
   </style>
 </head>
@@ -87,53 +77,43 @@
 
     mapboxgl.accessToken = "pk.eyJ1IjoicHRpdGtpd2kiLCJhIjoiY21pZG9uZGkwMDZ4MzJpcXZ0dnVoM2YwNSJ9.AbdFkhkiESdeKA7XNTUQNQ";
 
-    let map;
+    let map = null;
     let markersById = {};
 
-    // --- INIT MAP ---
     function initMap() {
-      console.log("🗺️ Initialisation de la carte…");
       map = new mapboxgl.Map({
         container: "map",
         style: "mapbox://styles/mapbox/light-v11",
-        center: [2.5, 47], // Vue France
+        center: [2.5, 47],
         zoom: 5
       });
+
+      setTimeout(() => map.resize(), 300);
+      window.addEventListener("resize", () => map.resize());
     }
 
-    // --- RENDU DES HABITATS ---
     function renderHabitats(habitats) {
-      console.log("📌 renderHabitats →", habitats);
-
-      // Supprimer les anciens markers
       Object.values(markersById).forEach(m => m.remove());
       markersById = {};
 
       habitats.forEach(h => {
-        console.log("➡️ Ajout marker:", h);
-
         const el = document.createElement("div");
         el.className = "marker";
 
         const popupContent = `
-  <div>
-    <div class="marker-title">${h.title}</div>
-    <div class="marker-city">${h.city || ""}</div>
-    <div>${h.shortDescription || ""}</div>
-  </div>
-`;
-
-        const popup = new mapboxgl.Popup({ offset: 15 })
-          .setHTML(popupContent);
+          <div>
+            <div class="marker-title">${h.title}</div>
+            <div class="marker-city">${h.city}</div>
+            <div>${h.shortDescription || ""}</div>
+          </div>
+        `;
 
         const marker = new mapboxgl.Marker(el)
           .setLngLat([h.lng, h.lat])
-          .setPopup(popup)
+          .setPopup(new mapboxgl.Popup().setHTML(popupContent))
           .addTo(map);
 
-        // Marker cliqué → envoie message à Wix
         el.addEventListener("click", () => {
-          console.log("🟣 Marker cliqué:", h.id);
           parent.postMessage({
             type: "OPEN_HABITAT",
             habitatId: h.id,
@@ -143,50 +123,28 @@
 
         markersById[h.id] = marker;
       });
-
-      console.log("🎉 Tous les markers ont été ajoutés.");
     }
 
-    // --- FOCUS HABITAT ---
     function focusHabitat(habitatId) {
-      console.log("🔎 focusHabitat:", habitatId);
-
       const marker = markersById[habitatId];
-      if (marker) {
-        const lngLat = marker.getLngLat();
-        console.log("📍 flyTo:", lngLat);
+      if (!marker) return;
 
-        map.flyTo({
-          center: lngLat,
-          zoom: 13
-        });
+      const pos = marker.getLngLat();
 
-        marker.togglePopup();
+      map.flyTo({
+        center: pos,
+        zoom: 13,
+        speed: 0.8
+      });
 
-        // Petit effet POP
-        marker.getElement().style.transform = "scale(1.35)";
-        setTimeout(() =>
-          marker.getElement().style.transform = "scale(1)"
-        , 500);
-      } else {
-        console.warn("⚠️ Marker introuvable pour:", habitatId);
-      }
+      marker.togglePopup();
     }
 
-    // --- LISTENER MESSAGE ---
     window.addEventListener("message", (event) => {
-      console.log("📩 MESSAGE REÇU :", event.data);
-
       const { type, habitats, habitatId } = event.data || {};
 
-      if (type === "INIT_HABITATS") {
-        console.log("🚀 INIT_HABITATS reçu");
-        renderHabitats(habitats);
-      }
-
-      if (type === "FOCUS_HABITAT") {
-        focusHabitat(habitatId);
-      }
+      if (type === "INIT_HABITATS") renderHabitats(habitats);
+      if (type === "FOCUS_HABITAT") focusHabitat(habitatId);
     });
 
     initMap();
