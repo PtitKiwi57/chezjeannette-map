@@ -82,109 +82,105 @@
   <div id="map"></div>
 
   <script>
-    console.log("📍 map.html loaded");
+console.log("📍 map.html loaded");
 
-    mapboxgl.accessToken = "pk.eyJ1IjoicHRpdGtpd2kiLCJhIjoiY21pZG9uZGkwMDZ4MzJpcXZ0dnVoM2YwNSJ9.AbdFkhkiESdeKA7XNTUQNQ";
+mapboxgl.accessToken = "pk.eyJ1IjoicHRpdGtpd2kiLCJhIjoiY21pZG9uZGkwMDZ4MzJpcXZ0dnVoM2YwNSJ9.AbdFkhkiESdeKA7XNTUQNQ";
 
-    let map = null;
-    let markersById = {};
+let map = null;
+let markersById = {};
+let openPopup = null; // 👉 popup global pour n’en garder qu’un
 
-    // 👉 NOUVEAU : popup global
-    let openPopup = null;
+function initMap() {
+  map = new mapboxgl.Map({
+    container: "map",
+    style: "mapbox://styles/mapbox/light-v11",
+    center: [2.5, 47],
+    zoom: 5
+  });
 
-    function initMap() {
-      map = new mapboxgl.Map({
-        container: "map",
-        style: "mapbox://styles/mapbox/light-v11",
-        center: [2.5, 47],
-        zoom: 5
-      });
+  setTimeout(() => map.resize(), 300);
+  window.addEventListener("resize", () => map.resize());
+}
 
-      setTimeout(() => map.resize(), 300);
-      window.addEventListener("resize", () => map.resize());
-    }
+function renderHabitats(habitats) {
+  Object.values(markersById).forEach(m => m.remove());
+  markersById = {};
 
+  habitats.forEach(h => {
 
-    function renderHabitats(habitats) {
-      Object.values(markersById).forEach(m => m.remove());
-      markersById = {};
+    // 🎨 Couleur du marker
+    let color = "#6B4EFF"; // Violet par défaut
+    if (h.status === "A Venir") color = "#FFA027"; // Orange
+    if (h.colorBox) color = h.colorBox; // OU : on laisse la BDD surcharger si présent
 
-      habitats.forEach(h => {
-        const el = document.createElement("div");
-        el.className = "marker";
+    // Création marker
+    const el = document.createElement("div");
+    el.className = "marker";
 
-        el.innerHTML = `
-          <div class="marker-halo"></div>
-          <div class="marker-inner"></div>
-        `;
+    el.innerHTML = `
+      <div class="marker-halo" style="background:${color}33"></div>
+      <div class="marker-inner" style="background:${color}; border-color:white;"></div>
+    `;
 
-        const popupContent = `
-          <div>
-            <div class="marker-title">${h.title}</div>
-            <div class="marker-city">${h.city}</div>
-            <div>${h.shortDescription || ""}</div>
-          </div>
-        `;
+    const popupContent = `
+      <div>
+        <div class="marker-title">${h.title}</div>
+        <div class="marker-city">${h.city || ""}</div>
+        <div>${h.shortDescription || ""}</div>
+      </div>
+    `;
 
-        const popup = new mapboxgl.Popup({ offset: 15 }).setHTML(popupContent);
+    const popup = new mapboxgl.Popup({ offset: 15 }).setHTML(popupContent);
 
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([h.lng, h.lat])
-          .setPopup(popup)
-          .addTo(map);
+    const marker = new mapboxgl.Marker(el)
+      .setLngLat([h.lng, h.lat])
+      .setPopup(popup)
+      .addTo(map);
 
-        // 👉 GESTION POPUP UNIQUE
-        el.addEventListener("click", () => {
+    // 👉 Un seul popup ouvert + message Wix
+    el.addEventListener("click", () => {
 
-          // Si un popup est déjà ouvert → on le ferme
-          if (openPopup && openPopup !== popup) {
-            openPopup.remove();
-          }
-
-          // On ouvre celui-ci
-          popup.addTo(map);
-          openPopup = popup;
-
-          // Message → Wix
-          parent.postMessage({
-            type: "OPEN_HABITAT",
-            habitatId: h.id,
-            slug: h.slug
-          }, "*");
-        });
-
-        markersById[h.id] = marker;
-      });
-    }
-
-
-    function focusHabitat(habitatId) {
-      const marker = markersById[habitatId];
-      if (!marker) return;
-
-      const pos = marker.getLngLat();
-      map.flyTo({ center: pos, zoom: 13, speed: 0.8 });
-
-      // Ouvre automatiquement ce popup
-      let popup = marker.getPopup();
-
-      if (openPopup && openPopup !== popup) {
-        openPopup.remove();
-      }
+      // Ferme l’ancien popup si différent
+      if (openPopup && openPopup !== popup) openPopup.remove();
 
       popup.addTo(map);
       openPopup = popup;
-    }
 
-
-    window.addEventListener("message", (event) => {
-      const { type, habitats, habitatId } = event.data || {};
-
-      if (type === "INIT_HABITATS") renderHabitats(habitats);
-      if (type === "FOCUS_HABITAT") focusHabitat(habitatId);
+      parent.postMessage({
+        type: "OPEN_HABITAT",
+        habitatId: h.id,
+        slug: h.slug
+      }, "*");
     });
 
-    initMap();
-  </script>
+    markersById[h.id] = marker;
+  });
+}
+
+function focusHabitat(habitatId) {
+  const marker = markersById[habitatId];
+  if (!marker) return;
+
+  const pos = marker.getLngLat();
+  map.flyTo({ center: pos, zoom: 13, speed: 0.8 });
+
+  let popup = marker.getPopup();
+
+  // Ferme l’ancien popup si nécessaire
+  if (openPopup && openPopup !== popup) openPopup.remove();
+
+  popup.addTo(map);
+  openPopup = popup;
+}
+
+window.addEventListener("message", (event) => {
+  const { type, habitats, habitatId } = event.data || {};
+
+  if (type === "INIT_HABITATS") renderHabitats(habitats);
+  if (type === "FOCUS_HABITAT") focusHabitat(habitatId);
+});
+
+initMap();
+</script>
 </body>
 </html>
