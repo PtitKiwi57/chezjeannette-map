@@ -8,22 +8,32 @@
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
 
   <style>
-    body, html {
+    html, body {
       margin: 0;
       padding: 0;
-    }
-    #map {
-      width: 100%;
-      height: 100%;
+      height: 100% !important;
+      overflow: hidden;
     }
 
-    /* --- MARKER PREMIUM --- */
+    /* Wix Studio a tendance à casser la hauteur → on FORCÉ */
+    #map {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100% !important;
+      height: 100% !important;
+      background: #eee;
+    }
+
+    /* MARKER STYLE */
     .marker {
       width: 26px;
       height: 26px;
       background-color: #6B4EFF;
       border-radius: 50%;
-      border: 3px solid white;
+      border: 3px solid #fff;
       box-shadow: 0 0 12px rgba(0,0,0,0.25);
       cursor: pointer;
       position: relative;
@@ -45,7 +55,6 @@
       border-radius: 50%;
       background: rgba(107, 78, 255, 0.25);
       animation: haloPulse 2.5s infinite ease-out;
-      pointer-events: none;
     }
 
     @keyframes haloPulse {
@@ -54,7 +63,7 @@
       100% { transform: scale(1); opacity: 0; }
     }
 
-    /* POPUP */
+    /* POPUP STYLE */
     .mapboxgl-popup-content {
       font-family: system-ui, sans-serif;
       padding: 12px 14px;
@@ -87,25 +96,34 @@
 
     mapboxgl.accessToken = "pk.eyJ1IjoicHRpdGtpd2kiLCJhIjoiY21pZG9uZGkwMDZ4MzJpcXZ0dnVoM2YwNSJ9.AbdFkhkiESdeKA7XNTUQNQ";
 
-    let map;
+    let map = null;
     let markersById = {};
 
-    // --- INIT MAP ---
+    // ---------------------------
+    // 🔥 INIT MAP
+    // ---------------------------
     function initMap() {
       console.log("🗺️ Initialisation de la carte…");
+
       map = new mapboxgl.Map({
         container: "map",
         style: "mapbox://styles/mapbox/light-v11",
-        center: [2.5, 47], // Vue France
+        center: [2.5, 47],   // France
         zoom: 5
       });
+
+      // TRÈS IMPORTANT POUR WIX STUDIO
+      setTimeout(() => map.resize(), 800);
+      window.addEventListener("resize", () => map.resize());
     }
 
-    // --- RENDU DES HABITATS ---
-    function renderHabitats(habitats) {
-      console.log("📌 renderHabitats →", habitats);
 
-      // Supprimer les anciens markers
+    // ---------------------------
+    // 📍 RENDER MARKERS
+    // ---------------------------
+    function renderHabitats(habitats) {
+      console.log("📌 renderHabitats() habitats →", habitats);
+
       Object.values(markersById).forEach(m => m.remove());
       markersById = {};
 
@@ -131,9 +149,9 @@
           .setPopup(popup)
           .addTo(map);
 
-        // Marker cliqué → envoie message à Wix
+        // Click marker → message vers Wix
         el.addEventListener("click", () => {
-          console.log("🟣 Marker cliqué:", h.id);
+          console.log("🟣 Marker cliqué →", h.id);
           parent.postMessage({
             type: "OPEN_HABITAT",
             habitatId: h.id,
@@ -144,43 +162,46 @@
         markersById[h.id] = marker;
       });
 
-      console.log("🎉 Tous les markers ont été ajoutés.");
+      console.log("🎉 Markers OK !");
     }
 
-    // --- FOCUS HABITAT ---
+
+    // ---------------------------
+    // 🔎 FOCUS MARKER
+    // ---------------------------
     function focusHabitat(habitatId) {
       console.log("🔎 focusHabitat:", habitatId);
 
       const marker = markersById[habitatId];
-      if (marker) {
-        const lngLat = marker.getLngLat();
-        console.log("📍 flyTo:", lngLat);
-
-        map.flyTo({
-          center: lngLat,
-          zoom: 13
-        });
-
-        marker.togglePopup();
-
-        // Petit effet POP
-        marker.getElement().style.transform = "scale(1.35)";
-        setTimeout(() =>
-          marker.getElement().style.transform = "scale(1)"
-        , 500);
-      } else {
+      if (!marker) {
         console.warn("⚠️ Marker introuvable pour:", habitatId);
+        return;
       }
+
+      const pos = marker.getLngLat();
+
+      map.flyTo({
+        center: pos,
+        zoom: 13
+      });
+
+      marker.togglePopup();
+
+      const el = marker.getElement();
+      el.style.transform = "scale(1.35)";
+      setTimeout(() => el.style.transform = "scale(1)", 500);
     }
 
-    // --- LISTENER MESSAGE ---
+
+    // ---------------------------
+    // 📩 Message WIX → MAP
+    // ---------------------------
     window.addEventListener("message", (event) => {
       console.log("📩 MESSAGE REÇU :", event.data);
 
       const { type, habitats, habitatId } = event.data || {};
 
       if (type === "INIT_HABITATS") {
-        console.log("🚀 INIT_HABITATS reçu");
         renderHabitats(habitats);
       }
 
@@ -189,6 +210,8 @@
       }
     });
 
+
+    // Lancement
     initMap();
   </script>
 </body>
