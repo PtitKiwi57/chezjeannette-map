@@ -17,7 +17,6 @@
       overflow: hidden;
     }
 
-    /* La carte prend tout l’espace */
     #map {
       flex: 1;
       width: 100%;
@@ -26,7 +25,7 @@
       background: #eee;
     }
 
-    /* MARKER SIMPLE & STABLE (rien d’autre !) */
+    /* Marker simple */
     .marker {
       width: 20px;
       height: 20px;
@@ -37,7 +36,6 @@
       cursor: pointer;
     }
 
-    /* Popup simple */
     .mapboxgl-popup-content {
       font-family: system-ui, sans-serif;
       padding: 12px 14px;
@@ -55,11 +53,12 @@
   <script>
     console.log("📍 map.html loaded");
 
-    mapboxgl.accessToken = "pk.eyJ1IjoicHRpdGtpd2kiLCJhIjoiY21pZG9uZGkwMDZ4MzJpcXZ0dnVoM2YwNSJ9.AbdFkhkiESdeKA7XNTUQNQ";
+    mapboxgl.accessToken =
+      "pk.eyJ1IjoicHRpdGtpd2kiLCJhIjoiY21pZG9uZGkwMDZ4MzJpcXZ0dnVoM2YwNSJ9.AbdFkhkiESdeKA7XNTUQNQ";
 
     let map = null;
     let markersById = {};
-    let openPopup = null; // un seul popup à la fois
+    let openPopup = null;
 
     // -----------------------------
     // INIT MAP
@@ -69,76 +68,82 @@
         container: "map",
         style: "mapbox://styles/mapbox/light-v11",
         center: [2.5, 47],
-        zoom: 5,
+        zoom: 5
       });
 
+      // Fix responsive
       setTimeout(() => map.resize(), 300);
       window.addEventListener("resize", () => map.resize());
     }
-
 
     // -----------------------------
     // RENDER MARKERS
     // -----------------------------
     function renderHabitats(habitats) {
 
-      // nettoyer anciens markers
+      // Clear anciens markers
       Object.values(markersById).forEach(m => m.remove());
       markersById = {};
 
       habitats.forEach(h => {
 
-        // Choix de couleur
-        let color = "#6B4EFF"; // violet
-        if (h.status === "A Venir") color = "#FFA027"; // orange
-        if (h.colorBox) color = h.colorBox; // surcharge depuis DB
+        // 👇 couleur
+        let color = "#6B4EFF";
+        if (h.status === "A Venir") color = "#FFA027";
+        if (h.colorBox) color = h.colorBox;
 
-        // Élément marker
+        // marker
         const el = document.createElement("div");
         el.className = "marker";
         el.style.setProperty("--color", color);
 
-        // Popup
+        // popup
         const popupContent = `
           <div>
             <div style="font-weight:bold; margin-bottom:4px;">${h.title}</div>
             <div style="opacity:0.7; margin-bottom:4px;">${h.city || ""}</div>
             <div>${h.shortDescription || ""}</div>
+            ${
+              h.distance != null
+                ? `<div style="margin-top:6px; font-weight:bold;">
+                      ${h.distance.toFixed(1)} km
+                   </div>`
+                : ""
+            }
           </div>
         `;
 
         const popup = new mapboxgl.Popup({ offset: 12 }).setHTML(popupContent);
 
-        // Marker sur la carte
         const marker = new mapboxgl.Marker(el)
           .setLngLat([h.lng, h.lat])
           .setPopup(popup)
           .addTo(map);
 
-        // Clic marker
+        // clic marker → notifier Wix
         el.addEventListener("click", () => {
 
-          // fermer popup précédent
           if (openPopup && openPopup !== popup) openPopup.remove();
 
           popup.addTo(map);
           openPopup = popup;
 
-          // envoyer message à Wix
-          parent.postMessage({
-            type: "OPEN_HABITAT",
-            habitatId: h.id,
-            slug: h.slug
-          }, "*");
+          parent.postMessage(
+            {
+              type: "OPEN_HABITAT",
+              habitatId: h.id,
+              slug: h.slug
+            },
+            "*"
+          );
         });
 
         markersById[h.id] = marker;
       });
     }
 
-
     // -----------------------------
-    // FOCUS SUR UN MARKER
+    // FOCUS HABITAT
     // -----------------------------
     function focusHabitat(habitatId) {
       const marker = markersById[habitatId];
@@ -152,7 +157,7 @@
         speed: 0.8
       });
 
-      let popup = marker.getPopup();
+      const popup = marker.getPopup();
 
       if (openPopup && openPopup !== popup) openPopup.remove();
 
@@ -160,19 +165,36 @@
       openPopup = popup;
     }
 
+    // -----------------------------
+    // NEW : CENTRER SUR L’ADRESSE SAISIE
+    // -----------------------------
+    function centerOnUser(lat, lng) {
+      map.flyTo({
+        center: [lng, lat],
+        zoom: 10,
+        speed: 0.8
+      });
+    }
 
     // -----------------------------
-    // LISTENER MESSAGE WIX → MAP
+    // MESSAGE REÇUS DE WIX
     // -----------------------------
     window.addEventListener("message", (event) => {
-      const { type, habitats, habitatId } = event.data || {};
+      const { type, habitats, habitatId, userLat, userLng } = event.data || {};
 
-      if (type === "INIT_HABITATS") renderHabitats(habitats);
-      if (type === "FOCUS_HABITAT") focusHabitat(habitatId);
+      if (type === "INIT_HABITATS") {
+        renderHabitats(habitats);
+      }
+
+      if (type === "FOCUS_HABITAT") {
+        focusHabitat(habitatId);
+      }
+
+      if (type === "CENTER_ON_USER") {
+        centerOnUser(userLat, userLng);
+      }
     });
 
-
-    // Lancement
     initMap();
   </script>
 </body>
