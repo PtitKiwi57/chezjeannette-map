@@ -15,7 +15,6 @@
     display: flex;
   }
 
-  /* Container map grande hauteur, stable sous Wix Studio */
   #map {
     flex: 1;
     min-height: 700px;
@@ -23,9 +22,7 @@
     background: #eee;
   }
 
-  /* --- MARKER STABLE (NE BOUGE PLUS AU ZOOM) --- */
-
-  /* Le conteneur marker utilisé par Mapbox – NE PAS mettre d'animation ici */
+  /* Marker container (NE PAS TOUCHER) */
   .marker {
     width: 26px;
     height: 26px;
@@ -33,7 +30,7 @@
     pointer-events: auto;
   }
 
-  /* Le vrai point violet */
+  /* Point violet */
   .marker-inner {
     width: 100%;
     height: 100%;
@@ -47,7 +44,7 @@
     transition: transform 0.2s ease;
   }
 
-  /* Halo violet animé indépendant */
+  /* Halo animé */
   .marker-halo {
     position: absolute;
     top: -10px;
@@ -60,19 +57,16 @@
     pointer-events: none;
   }
 
-  /* Animation halo */
   @keyframes haloPulse {
     0%   { transform: scale(0.3); opacity: 0.45; }
     70%  { transform: scale(1); opacity: 0; }
     100% { transform: scale(1); opacity: 0; }
   }
 
-  /* Hover uniquement sur l'inner (pas le marker global) */
   .marker:hover .marker-inner {
     transform: scale(1.15);
   }
 
-  /* Popup */
   .mapboxgl-popup-content {
     font-family: system-ui, sans-serif;
     padding: 12px 14px;
@@ -95,6 +89,9 @@
     let map = null;
     let markersById = {};
 
+    // 👉 NOUVEAU : popup global
+    let openPopup = null;
+
     function initMap() {
       map = new mapboxgl.Map({
         container: "map",
@@ -107,6 +104,7 @@
       window.addEventListener("resize", () => map.resize());
     }
 
+
     function renderHabitats(habitats) {
       Object.values(markersById).forEach(m => m.remove());
       markersById = {};
@@ -115,11 +113,10 @@
         const el = document.createElement("div");
         el.className = "marker";
 
-        // Ajout du contenu interne stable (anti-bug)
-    el.innerHTML = `
-      <div class="marker-halo"></div>
-      <div class="marker-inner"></div>
-    `;
+        el.innerHTML = `
+          <div class="marker-halo"></div>
+          <div class="marker-inner"></div>
+        `;
 
         const popupContent = `
           <div>
@@ -129,12 +126,26 @@
           </div>
         `;
 
+        const popup = new mapboxgl.Popup({ offset: 15 }).setHTML(popupContent);
+
         const marker = new mapboxgl.Marker(el)
           .setLngLat([h.lng, h.lat])
-          .setPopup(new mapboxgl.Popup().setHTML(popupContent))
+          .setPopup(popup)
           .addTo(map);
 
+        // 👉 GESTION POPUP UNIQUE
         el.addEventListener("click", () => {
+
+          // Si un popup est déjà ouvert → on le ferme
+          if (openPopup && openPopup !== popup) {
+            openPopup.remove();
+          }
+
+          // On ouvre celui-ci
+          popup.addTo(map);
+          openPopup = popup;
+
+          // Message → Wix
           parent.postMessage({
             type: "OPEN_HABITAT",
             habitatId: h.id,
@@ -146,20 +157,25 @@
       });
     }
 
+
     function focusHabitat(habitatId) {
       const marker = markersById[habitatId];
       if (!marker) return;
 
       const pos = marker.getLngLat();
+      map.flyTo({ center: pos, zoom: 13, speed: 0.8 });
 
-      map.flyTo({
-        center: pos,
-        zoom: 13,
-        speed: 0.8
-      });
+      // Ouvre automatiquement ce popup
+      let popup = marker.getPopup();
 
-      marker.togglePopup();
+      if (openPopup && openPopup !== popup) {
+        openPopup.remove();
+      }
+
+      popup.addTo(map);
+      openPopup = popup;
     }
+
 
     window.addEventListener("message", (event) => {
       const { type, habitats, habitatId } = event.data || {};
