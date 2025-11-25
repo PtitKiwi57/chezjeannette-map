@@ -115,13 +115,13 @@
         const el = document.createElement("div");
         el.className = "marker";
 
-        const popupContent = 
-          <div>
-            <div class="marker-title">${h.title}</div>
-            <div class="marker-city">${h.city || ""}</div>
-            <div>${h.shortDescription || ""}</div>
-          </div>
-        ;
+        const popupContent = `
+  <div>
+    <div class="marker-title">${h.title}</div>
+    <div class="marker-city">${h.city || ""}</div>
+    <div>${h.shortDescription || ""}</div>
+  </div>
+`;
 
         const popup = new mapboxgl.Popup({ offset: 15 })
           .setHTML(popupContent);
