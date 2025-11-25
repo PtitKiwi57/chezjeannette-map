@@ -3,85 +3,23 @@
 <head>
   <meta charset="UTF-8" />
 
+  <!-- MAPBOX LIB -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
 
   <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-  }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+    }
 
-  /* Container map grande hauteur, stable sous Wix Studio */
-  #map {
-    flex: 1;
-    min-height: 700px;
-    width: 100%;
-    background: #eee;
-  }
-
-  /* --- MARKER STABLE (NE BOUGE PLUS AU ZOOM) --- */
-
-  /* Le conteneur marker utilisé par Mapbox – NE PAS mettre d'animation ici */
-  .marker {
-    width: 26px;
-    height: 26px;
-    position: relative;
-    pointer-events: auto;
-  }
-
-  /* Le vrai point violet */
-  .marker-inner {
-    width: 100%;
-    height: 100%;
-    background-color: #6B4EFF;
-    border-radius: 50%;
-    border: 3px solid #fff;
-    box-shadow: 0 0 12px rgba(0,0,0,0.25);
-    position: absolute;
-    top: 0;
-    left: 0;
-    transition: transform 0.2s ease;
-  }
-
-  /* Halo violet animé indépendant */
-  .marker-halo {
-    position: absolute;
-    top: -10px;
-    left: -10px;
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    background: rgba(107, 78, 255, 0.25);
-    animation: haloPulse 2.5s infinite ease-out;
-    pointer-events: none;
-  }
-
-  /* Animation halo */
-  @keyframes haloPulse {
-    0%   { transform: scale(0.3); opacity: 0.45; }
-    70%  { transform: scale(1); opacity: 0; }
-    100% { transform: scale(1); opacity: 0; }
-  }
-
-  /* Hover uniquement sur l'inner (pas le marker global) */
-  .marker:hover .marker-inner {
-    transform: scale(1.15);
-  }
-
-  /* Popup */
-  .mapboxgl-popup-content {
-    font-family: system-ui, sans-serif;
-    padding: 12px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    background: white;
-    color: #333;
-  }
-</style>
+    #map {
+      width: 100%;
+      height: 700px; /* SIMPLE, FIXE, STABLE */
+    }
+  </style>
 </head>
 
 <body>
@@ -98,13 +36,12 @@
     function initMap() {
       map = new mapboxgl.Map({
         container: "map",
-        style: "mapbox://styles/mapbox/light-v11",
+        style: "mapbox://styles/mapbox/streets-v11",
+
+        // Centrage par défaut
         center: [2.5, 47],
         zoom: 5
       });
-
-      setTimeout(() => map.resize(), 300);
-      window.addEventListener("resize", () => map.resize());
     }
 
     function renderHabitats(habitats) {
@@ -112,29 +49,22 @@
       markersById = {};
 
       habitats.forEach(h => {
-        const el = document.createElement("div");
-        el.className = "marker";
 
-        // Ajout du contenu interne stable (anti-bug)
-    el.innerHTML = `
-      <div class="marker-halo"></div>
-      <div class="marker-inner"></div>
-    `;
-
-        const popupContent = `
-          <div>
-            <div class="marker-title">${h.title}</div>
-            <div class="marker-city">${h.city}</div>
-            <div>${h.shortDescription || ""}</div>
-          </div>
-        `;
-
-        const marker = new mapboxgl.Marker(el)
+        // === MARKER STANDARD MAPBOX (FIXE, ZERO BUG) ===
+        const marker = new mapboxgl.Marker() // aucune customisation CSS
           .setLngLat([h.lng, h.lat])
-          .setPopup(new mapboxgl.Popup().setHTML(popupContent))
+          .setPopup(
+            new mapboxgl.Popup().setHTML(`
+              <div>
+                <strong>${h.title}</strong><br>
+                ${h.city}<br>
+                ${h.shortDescription || ""}
+              </div>
+            `)
+          )
           .addTo(map);
 
-        el.addEventListener("click", () => {
+        marker.getElement().addEventListener("click", () => {
           parent.postMessage({
             type: "OPEN_HABITAT",
             habitatId: h.id,
@@ -154,8 +84,7 @@
 
       map.flyTo({
         center: pos,
-        zoom: 13,
-        speed: 0.8
+        zoom: 13
       });
 
       marker.togglePopup();
@@ -164,8 +93,14 @@
     window.addEventListener("message", (event) => {
       const { type, habitats, habitatId } = event.data || {};
 
-      if (type === "INIT_HABITATS") renderHabitats(habitats);
-      if (type === "FOCUS_HABITAT") focusHabitat(habitatId);
+      if (type === "INIT_HABITATS") {
+        console.log("INIT_HABITATS reçu");
+        renderHabitats(habitats);
+      }
+
+      if (type === "FOCUS_HABITAT") {
+        focusHabitat(habitatId);
+      }
     });
 
     initMap();
