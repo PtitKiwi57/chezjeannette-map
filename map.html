@@ -182,10 +182,12 @@
        const popupContent = `
   <div class="popup-card">
     ${
-      h.image
-        ? `<img src="${h.image}" class="popup-image" />`
-        : ""
-    }
+  h.image
+    ? `<a href="${h.url}" target="_blank" style="display:block;">
+         <img src="${h.image}" class="popup-image" />
+       </a>`
+    : ""
+}
 
     <div class="popup-body">
       <div class="popup-title">${h.title}</div>
