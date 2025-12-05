@@ -309,6 +309,14 @@
         renderHabitats(habitats);
       }
 
+      if (type === "SET_VIEW") {
+    map.flyTo({
+        center: event.data.center,
+        zoom: event.data.zoom,
+        speed: 0.6
+    });
+}
+
       if (type === "FOCUS_HABITAT") {
         focusHabitat(habitatId);
       }
