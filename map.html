@@ -298,11 +298,12 @@
       });
     }
 
-    // -----------------------------
+        // -----------------------------
     // MESSAGE REÇUS DE WIX
     // -----------------------------
     window.addEventListener("message", (event) => {
-      const { type, habitats, habitatId, userLat, userLng } = event.data || {};
+      const { type, habitats, habitatId, userLat, userLng,
+              minLat, minLng, maxLat, maxLng } = event.data || {};
 
       if (type === "INIT_HABITATS") {
         renderHabitats(habitats);
@@ -314,6 +315,18 @@
 
       if (type === "CENTER_ON_USER") {
         centerOnUser(userLat, userLng);
+      }
+
+      // 🔵 NEW : adapter le zoom à la zone filtrée (Tous / IDF / Bordeaux)
+      if (type === "FIT_BOUNDS" && map && minLat != null) {
+        const bounds = [
+          [minLng, minLat],
+          [maxLng, maxLat]
+        ];
+        map.fitBounds(bounds, {
+          padding: 40,
+          maxZoom: 12
+        });
       }
     });
 
