@@ -145,17 +145,41 @@
     // INIT MAP
     // -----------------------------
     function initMap() {
-      map = new mapboxgl.Map({
-        container: "map",
-        style: "mapbox://styles/mapbox/light-v11",
-        center: [2.5, 47],
-        zoom: 5
-      });
+  map = new mapboxgl.Map({
+    container: "map",
+    style: "mapbox://styles/mapbox/light-v11",
+    center: [2.5, 47],
+    zoom: 5
+  });
 
-      // Fix responsive
-      setTimeout(() => map.resize(), 300);
-      window.addEventListener("resize", () => map.resize());
-    }
+  // Fix responsive
+  setTimeout(() => map.resize(), 300);
+  window.addEventListener("resize", () => map.resize());
+
+  // 🟣 Quand la map est chargée → activer POI selon zoom
+  map.on("load", () => {
+
+    map.on("zoom", () => {
+      const z = map.getZoom();
+
+      // Commerces (cafés, magasins, restos…)
+      map.setLayoutProperty(
+        "poi-label",
+        "visibility",
+        z >= 12 ? "visible" : "none"
+      );
+
+      // Transports (métro, gares…)
+      map.setLayoutProperty(
+        "transit-label",
+        "visibility",
+        z >= 12 ? "visible" : "none"
+      );
+
+    });
+
+  });
+}
 
     // -----------------------------
     // RENDER MARKERS
