@@ -511,15 +511,19 @@
           Object.values(markersById).forEach(m => m.remove());
           markersById = {};
       
-          // Afficher un seul habitat
+          // Afficher le marker unique
           renderHabitats([habitat]);
       
-          // Zoom auto à fond sur le marker
+          // Zoom auto
           map.flyTo({
               center: [habitat.lng, habitat.lat],
               zoom: 14,
               speed: 0.8
           });
+      
+          // 🎯 AJOUT ICI → cercle autour de l'habitat
+          const radius = 400; // 400m ≈ 5 min à pied
+          drawCircle(habitat.lng, habitat.lat, radius);
       }
     });
 
