@@ -485,22 +485,26 @@ transitLayers.forEach(id => {
 
       // 🔵 NEW : adapter le zoom à la zone filtrée (Tous / IDF / Bordeaux)
       if (type === "FIT_BOUNDS" && map && minLat != null) {
-  const bounds = [
-    [minLng, minLat],
-    [maxLng, maxLat]
-  ];
-
-  map.fitBounds(bounds, {
-    padding: 40,
-    maxZoom: 9
-  });
-
-  // 👉 CALCUL DU CENTRE DE LA RÉGION
+  
+  // 👉 Calcul du centre
   const centerLat = (minLat + maxLat) / 2;
   const centerLng = (minLng + maxLng) / 2;
 
+  // 👉 On choisit un zoom fixe (et propre pour toutes les régions)
+  const ZOOM = 9; // tu peux mettre 8.5, 9, 9.2, etc.
+
+  // 👉 On centre la map sur la région
+  map.flyTo({
+    center: [centerLng, centerLat],
+    zoom: ZOOM,
+    speed: 0.8
+  });
+
+  // 👉 Calcule le rayon automatique (pour que le cercle englobe toute la région)
   const radius = computeRadiusFromBounds(minLat, minLng, maxLat, maxLng);
-drawCircle(centerLng, centerLat, radius);
+
+  // 👉 Dessine le cercle
+  drawCircle(centerLng, centerLat, radius);
 }
     });
 
