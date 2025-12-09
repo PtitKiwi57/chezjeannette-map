@@ -145,42 +145,62 @@
   const centerLat = (minLat + maxLat) / 2;
   const centerLng = (minLng + maxLng) / 2;
 
-  // distance lat max
-  const dLat = Math.abs(centerLat - maxLat) * (Math.PI / 180) * 6371000;
-  
-  // distance lng max
-  const dLng = Math.abs(centerLng - maxLng) * (Math.PI / 180) * 6371000 * Math.cos(centerLat * Math.PI / 180);
+  const corners = [
+    [minLat, minLng],
+    [minLat, maxLng],
+    [maxLat, minLng],
+    [maxLat, maxLng]
+  ];
 
-  // rayon = plus grande distance
-  return Math.max(dLat, dLng);
+  const R = 6371000;
+  let maxDist = 0;
+
+  corners.forEach(([lat, lng]) => {
+    const dLat = (lat - centerLat) * Math.PI / 180;
+    const dLng = (lng - centerLng) * Math.PI / 180;
+
+    const a =
+      Math.sin(dLat/2)**2 +
+      Math.cos(centerLat * Math.PI/180) *
+      Math.cos(lat * Math.PI/180) *
+      Math.sin(dLng/2)**2;
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const dist = R * c;
+
+    if (dist > maxDist) maxDist = dist;
+  });
+
+  return maxDist;
 }
 
     // -----------------------------
 // DESSINER UN CERCLE
 // -----------------------------
-function drawCircle(lng, lat, radiusMeters = 400) {
+function drawCircle(lng, lat, radiusMeters) {
 
-  // Si un cercle existe déjà → on le retire
+  // remove previous
   if (map.getLayer("circle-layer")) map.removeLayer("circle-layer");
   if (map.getLayer("circle-outline")) map.removeLayer("circle-outline");
   if (map.getSource("circle-source")) map.removeSource("circle-source");
 
-  const points = 64;
+  const points = 128;
   const coords = [];
-  const R = 6371000; // Rayon de la Terre
+  const R = 6371000;
 
   for (let i = 0; i < points; i++) {
     const angle = (i / points) * Math.PI * 2;
-    const dx = (radiusMeters * Math.cos(angle)) / R;
-    const dy = (radiusMeters * Math.sin(angle)) / R;
 
-    const newLng = lng + dx * (180 / Math.PI);
-    const newLat = lat + dy * (180 / Math.PI);
+    const dx = radiusMeters * Math.cos(angle);
+    const dy = radiusMeters * Math.sin(angle);
+
+    const newLat = lat + (dy / R) * (180 / Math.PI);
+    const newLng = lng + (dx / (R * Math.cos(lat * Math.PI / 180))) * (180 / Math.PI);
 
     coords.push([newLng, newLat]);
   }
 
-  coords.push(coords[0]); // fermer le cercle
+  coords.push(coords[0]);
 
   map.addSource("circle-source", {
     type: "geojson",
@@ -193,7 +213,6 @@ function drawCircle(lng, lat, radiusMeters = 400) {
     }
   });
 
-  // Fond violet transparent
   map.addLayer({
     id: "circle-layer",
     type: "fill",
@@ -204,7 +223,6 @@ function drawCircle(lng, lat, radiusMeters = 400) {
     }
   });
 
-  // Bordure pointillée
   map.addLayer({
     id: "circle-outline",
     type: "line",
