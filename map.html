@@ -37,101 +37,101 @@
     }
 
     .mapboxgl-popup {
-  max-width: 280px !important;
-}
+      max-width: 280px !important;
+    }
 
-.mapboxgl-popup-content {
-  padding: 0;
-  border-radius: 18px;
-  overflow: hidden;
-  font-family: system-ui, sans-serif;
-}
+    .mapboxgl-popup-content {
+      padding: 0;
+      border-radius: 18px;
+      overflow: hidden;
+      font-family: system-ui, sans-serif;
+    }
 
-.popup-card {
-  background: white;
-}
+    .popup-card {
+      background: white;
+    }
 
-.popup-image {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  display: block;
-}
+    .popup-image {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      display: block;
+    }
 
-.popup-body {
-  padding: 14px 16px 16px;
-}
+    .popup-body {
+      padding: 14px 16px 16px;
+    }
 
-.popup-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #2f2cd6;
-  margin-bottom: 8px;
-}
+    .popup-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2f2cd6;
+      margin-bottom: 8px;
+    }
 
-.popup-address {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  font-size: 13px;
-  color: #555;
-  margin-bottom: 10px;
-}
+    .popup-address {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 10px;
+    }
 
-.popup-address span {
-  line-height: 1.3;
-}
+    .popup-address span {
+      line-height: 1.3;
+    }
 
-.popup-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+    .popup-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-.popup-status {
-  background: #2f2cd6;
-  color: white;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-}
+    .popup-status {
+      background: #2f2cd6;
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
 
-.popup-pin {
-  width: 36px;
-  height: 36px;
-  background: #2f2cd6;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    .popup-pin {
+      width: 36px;
+      height: 36px;
+      background: #2f2cd6;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
     .popup-separator {
-  height: 1px;
-  background: #ececec;
-  margin: 8px 0 10px;
-}
+      height: 1px;
+      background: #ececec;
+      margin: 8px 0 10px;
+    }
 
-.popup-coloc {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #555;
-  margin-bottom: 8px;
-}
+    .popup-coloc {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 8px;
+    }
 
-.popup-coloc span {
-  line-height: 1.3;
-}
+    .popup-coloc span {
+      line-height: 1.3;
+    }
 
     .popup-link-wrapper {
-  display: block;
-  cursor: pointer;
-  text-decoration: none !important;
-  color: inherit !important;
-}
+      display: block;
+      cursor: pointer;
+      text-decoration: none !important;
+      color: inherit !important;
+    }
   </style>
 </head>
 
@@ -148,174 +148,170 @@
     let markersById = {};
     let openPopup = null;
 
+    // -----------------------------
+    // RAYON À PARTIR DES BOUNDS
+    // -----------------------------
     function computeRadiusFromBounds(minLat, minLng, maxLat, maxLng) {
-  const centerLat = (minLat + maxLat) / 2;
-  const centerLng = (minLng + maxLng) / 2;
+      const centerLat = (minLat + maxLat) / 2;
+      const centerLng = (minLng + maxLng) / 2;
 
-  const corners = [
-    [minLat, minLng],
-    [minLat, maxLng],
-    [maxLat, minLng],
-    [maxLat, maxLng]
-  ];
+      const corners = [
+        [minLat, minLng],
+        [minLat, maxLng],
+        [maxLat, minLng],
+        [maxLat, maxLng]
+      ];
 
-  const R = 6371000;
-  let maxDist = 0;
+      const R = 6371000;
+      let maxDist = 0;
 
-  corners.forEach(([lat, lng]) => {
-    const dLat = (lat - centerLat) * Math.PI / 180;
-    const dLng = (lng - centerLng) * Math.PI / 180;
+      corners.forEach(([lat, lng]) => {
+        const dLat = (lat - centerLat) * Math.PI / 180;
+        const dLng = (lng - centerLng) * Math.PI / 180;
 
-    const a =
-      Math.sin(dLat/2)**2 +
-      Math.cos(centerLat * Math.PI/180) *
-      Math.cos(lat * Math.PI/180) *
-      Math.sin(dLng/2)**2;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos(centerLat * Math.PI / 180) *
+          Math.cos(lat * Math.PI / 180) *
+          Math.sin(dLng / 2) ** 2;
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const dist = R * c;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const dist = R * c;
 
-    if (dist > maxDist) maxDist = dist;
-  });
+        if (dist > maxDist) maxDist = dist;
+      });
 
-  return maxDist;
-}
+      return maxDist;
+    }
 
     // -----------------------------
-// DESSINER UN CERCLE
-// -----------------------------
-function drawCircle(lng, lat, radiusMeters) {
+    // DESSINER UN CERCLE
+    // -----------------------------
+    function drawCircle(lng, lat, radiusMeters) {
 
-  // remove previous
-  if (map.getLayer("circle-layer")) map.removeLayer("circle-layer");
-  if (map.getLayer("circle-outline")) map.removeLayer("circle-outline");
-  if (map.getSource("circle-source")) map.removeSource("circle-source");
+      // remove previous
+      if (map.getLayer("circle-layer")) map.removeLayer("circle-layer");
+      if (map.getLayer("circle-outline")) map.removeLayer("circle-outline");
+      if (map.getSource("circle-source")) map.removeSource("circle-source");
 
-  const points = 128;
-  const coords = [];
-  const R = 6371000;
+      const points = 128;
+      const coords = [];
+      const R = 6371000;
 
-  for (let i = 0; i < points; i++) {
-    const angle = (i / points) * Math.PI * 2;
+      for (let i = 0; i < points; i++) {
+        const angle = (i / points) * Math.PI * 2;
 
-    const dx = radiusMeters * Math.cos(angle);
-    const dy = radiusMeters * Math.sin(angle);
+        const dx = radiusMeters * Math.cos(angle);
+        const dy = radiusMeters * Math.sin(angle);
 
-    const newLat = lat + (dy / R) * (180 / Math.PI);
-    const newLng = lng + (dx / (R * Math.cos(lat * Math.PI / 180))) * (180 / Math.PI);
+        const newLat = lat + (dy / R) * (180 / Math.PI);
+        const newLng = lng + (dx / (R * Math.cos(lat * Math.PI / 180))) * (180 / Math.PI);
 
-    coords.push([newLng, newLat]);
-  }
-
-  coords.push(coords[0]);
-
-  map.addSource("circle-source", {
-    type: "geojson",
-    data: {
-      type: "Feature",
-      geometry: {
-        type: "Polygon",
-        coordinates: [coords]
-      }
-    }
-  });
-
-  map.addLayer({
-    id: "circle-layer",
-    type: "fill",
-    source: "circle-source",
-    paint: {
-      "fill-color": "#7d7bff",
-      "fill-opacity": 0.18
-    }
-  });
-
-  map.addLayer({
-    id: "circle-outline",
-    type: "line",
-    source: "circle-source",
-    paint: {
-      "line-color": "#574bff",
-      "line-width": 2,
-      "line-dasharray": [2, 2]
-    }
-  });
-}
-
-   // -----------------------------
-// INIT MAP
-// -----------------------------
-function initMap() {
-  map = new mapboxgl.Map({
-    container: "map",
-    style: "mapbox://styles/mapbox/streets-v12",
-    center: [2.5, 47],
-    zoom: 5
-  });
-
-  // Fix responsive
-  setTimeout(() => map.resize(), 300);
-  window.addEventListener("resize", () => map.resize());
-
-  // 🟣 Quand la map a fini de charger
-  map.on("load", () => {
-    console.log("🟢 Mapbox LOAD OK");
-
-    // 🔍 Log des layers, une seule fois
-    console.log("📄 Liste des layers :", map.getStyle().layers);
-
-    // ⭐ Rendez les POI visibles (sinon on ne voit rien même si c’est activé)
-    try {
-      map.setPaintProperty("poi-label", "text-color", "#333");
-      map.setLayoutProperty("poi-label", "text-size", 14);
-
-      map.setPaintProperty("transit-label", "text-color", "#000");
-      map.setLayoutProperty("transit-label", "text-size", 14);
-    } catch (e) {
-      console.warn("⚠️ Impossible d’ajuster les propriétés des POI :", e);
-    }
-
-    // 🔵 Listener sur le zoom
-    map.on("zoom", () => {
-      const z = map.getZoom();
-      console.log("🔎 Zoom =", z);
-
-      // Commerces
-      try {
-        map.setLayoutProperty(
-          "poi-label",
-          "visibility",
-          z >= 12 ? "visible" : "none"
-        );
-        console.log("🛍️ POI visibility =", map.getLayoutProperty("poi-label", "visibility"));
-      } catch (e) {
-        console.warn("⚠️ POI layer introuvable :", e);
+        coords.push([newLng, newLat]);
       }
 
-      // Transports
-      try {
-        const transitLayers = [
-  "transit-label",
-  "transit-labels",
-  "rail-label",
-  "railway-label",
-  "subway-label",
-  "bus-label",
-  "train-label"
-];
+      coords.push(coords[0]);
 
-transitLayers.forEach(id => {
-  if (map.getLayer(id)) {
-    map.setLayoutProperty(id, "visibility", z >= 12 ? "visible" : "none");
-  }
-});
-        console.log("🚇 Transit layers visibility updated.");
-      } catch (e) {
-        console.warn("⚠️ Transit layer introuvable :", e);
-      }
-    });
-  });
-}
+      map.addSource("circle-source", {
+        type: "geojson",
+        data: {
+          type: "Feature",
+          geometry: {
+            type: "Polygon",
+            coordinates: [coords]
+          }
+        }
+      });
+
+      map.addLayer({
+        id: "circle-layer",
+        type: "fill",
+        source: "circle-source",
+        paint: {
+          "fill-color": "#7d7bff",
+          "fill-opacity": 0.18
+        }
+      });
+
+      map.addLayer({
+        id: "circle-outline",
+        type: "line",
+        source: "circle-source",
+        paint: {
+          "line-color": "#574bff",
+          "line-width": 2,
+          "line-dasharray": [2, 2]
+        }
+      });
+    }
+
+    // -----------------------------
+    // INIT MAP
+    // -----------------------------
+    function initMap() {
+      map = new mapboxgl.Map({
+        container: "map",
+        style: "mapbox://styles/mapbox/streets-v12",
+        center: [2.5, 47],
+        zoom: 5
+      });
+
+      // Fix responsive
+      setTimeout(() => map.resize(), 300);
+      window.addEventListener("resize", () => map.resize());
+
+      // Quand la map a fini de charger
+      map.on("load", () => {
+        console.log("🟢 Mapbox LOAD OK");
+
+        console.log("📄 Liste des layers :", map.getStyle().layers);
+
+        try {
+          map.setPaintProperty("poi-label", "text-color", "#333");
+          map.setLayoutProperty("poi-label", "text-size", 14);
+
+          map.setPaintProperty("transit-label", "text-color", "#000");
+          map.setLayoutProperty("transit-label", "text-size", 14);
+        } catch (e) {
+          console.warn("⚠️ Impossible d’ajuster les propriétés des POI :", e);
+        }
+
+        map.on("zoom", () => {
+          const z = map.getZoom();
+          console.log("🔎 Zoom =", z);
+
+          try {
+            map.setLayoutProperty(
+              "poi-label",
+              "visibility",
+              z >= 12 ? "visible" : "none"
+            );
+          } catch (e) {
+            console.warn("⚠️ POI layer introuvable :", e);
+          }
+
+          try {
+            const transitLayers = [
+              "transit-label",
+              "transit-labels",
+              "rail-label",
+              "railway-label",
+              "subway-label",
+              "bus-label",
+              "train-label"
+            ];
+
+            transitLayers.forEach(id => {
+              if (map.getLayer(id)) {
+                map.setLayoutProperty(id, "visibility", z >= 12 ? "visible" : "none");
+              }
+            });
+          } catch (e) {
+            console.warn("⚠️ Transit layer introuvable :", e);
+          }
+        });
+      });
+    }
 
     // -----------------------------
     // RENDER MARKERS
@@ -328,7 +324,7 @@ transitLayers.forEach(id => {
 
       habitats.forEach(h => {
 
-        // 👇 couleur
+        // couleur
         let color = "#3C33C3";
         if (h.status === "A Venir") color = "#FF8657";
         if (h.colorBox) color = h.colorBox;
@@ -339,50 +335,48 @@ transitLayers.forEach(id => {
         el.style.setProperty("--color", color);
 
         // popup
-       const popupContent = `
-<div class="popup-link-wrapper" onclick="window.top.location.href='${h.url}'">
-  <div class="popup-card">
+        const popupContent = `
+          <div class="popup-link-wrapper" data-habitat-id="${h.id}">
+            <div class="popup-card">
+              ${h.image ? `<img src="${h.image}" class="popup-image" />` : ""}
 
-    ${h.image ? `<img src="${h.image}" class="popup-image" />` : ""}
+              <div class="popup-body">
+                <div class="popup-title">${h.title}</div>
 
-    <div class="popup-body">
-      <div class="popup-title">${h.title}</div>
+                <div class="popup-address">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                    width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                  </svg>
+                  <span>${h.adresseLabel || h.city || ""}</span>
+                </div>
 
-      <div class="popup-address">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-          viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-          width="16" height="16">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-        </svg>
-        <span>${h.adresseLabel || h.city || ""}</span>
-      </div>
+                <div class="popup-separator"></div>
 
-      <div class="popup-separator"></div>
+                <div class="popup-coloc">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                    width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                  </svg>
+                  <span>${h.shortDescription || ""}</span>
+                </div>
 
-      <div class="popup-coloc">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-          viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-          width="18" height="18">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72..." />
-        </svg>
-        <span>${h.shortDescription || ""}</span>
-      </div>
-
-      <div class="popup-footer">
-        <div class="popup-status"
-             style="background:${h.status === 'Ouvert' ? '#3C33C3' : '#FF8657'};">
-          ${h.status === "Ouvert" ? "Ouvert" : "À venir"}
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-`;
+                <div class="popup-footer">
+                  <div class="popup-status"
+                       style="background:${h.status === 'Ouvert' ? '#3C33C3' : '#FF8657'}; color:white;">
+                    ${h.status === "Ouvert" ? "Ouvert" : "À venir"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
 
         const popup = new mapboxgl.Popup({ offset: 12 }).setHTML(popupContent);
 
@@ -391,9 +385,8 @@ transitLayers.forEach(id => {
           .setPopup(popup)
           .addTo(map);
 
-        // clic marker → notifier Wix
+        // clic marker → notifier Wix (ouvre la fiche à droite)
         el.addEventListener("click", () => {
-
           if (openPopup && openPopup !== popup) openPopup.remove();
 
           popup.addTo(map);
@@ -407,6 +400,26 @@ transitLayers.forEach(id => {
             },
             "*"
           );
+        });
+
+        // clic sur la popup → même comportement (mais pas de navigation directe)
+        popup.on("open", () => {
+          const wrapper = document.querySelector(
+            '.popup-link-wrapper[data-habitat-id="' + h.id + '"]'
+          );
+          if (!wrapper) return;
+
+          wrapper.addEventListener("click", (e) => {
+            e.preventDefault();
+            parent.postMessage(
+              {
+                type: "OPEN_HABITAT",
+                habitatId: h.id,
+                slug: h.slug
+              },
+              "*"
+            );
+          });
         });
 
         markersById[h.id] = marker;
@@ -437,7 +450,7 @@ transitLayers.forEach(id => {
     }
 
     // -----------------------------
-    // NEW : CENTRER SUR L’ADRESSE SAISIE
+    // CENTRER SUR L’ADRESSE SAISIE
     // -----------------------------
     function centerOnUser(lat, lng) {
       map.flyTo({
@@ -447,7 +460,7 @@ transitLayers.forEach(id => {
       });
     }
 
-        // -----------------------------
+    // -----------------------------
     // MESSAGE REÇUS DE WIX
     // -----------------------------
     window.addEventListener("message", (event) => {
@@ -459,12 +472,12 @@ transitLayers.forEach(id => {
       }
 
       if (type === "SET_VIEW") {
-    map.flyTo({
-        center: event.data.center,
-        zoom: event.data.zoom,
-        speed: 0.6
-    });
-}
+        map.flyTo({
+          center: event.data.center,
+          zoom: event.data.zoom,
+          speed: 0.6
+        });
+      }
 
       if (type === "FOCUS_HABITAT") {
         focusHabitat(habitatId);
@@ -474,29 +487,24 @@ transitLayers.forEach(id => {
         centerOnUser(userLat, userLng);
       }
 
-      // 🔵 NEW : adapter le zoom à la zone filtrée (Tous / IDF / Bordeaux)
+      // adapter la vue + cercle sur région (Tous / IDF / Bordeaux)
       if (type === "FIT_BOUNDS" && map && minLat != null) {
-  
-  // 👉 Calcul du centre
-  const centerLat = (minLat + maxLat) / 2;
-  const centerLng = (minLng + maxLng) / 2;
 
-  // 👉 On choisit un zoom fixe (et propre pour toutes les régions)
-  const ZOOM = 9; // tu peux mettre 8.5, 9, 9.2, etc.
+        const centerLat = (minLat + maxLat) / 2;
+        const centerLng = (minLng + maxLng) / 2;
 
-  // 👉 On centre la map sur la région
-  map.flyTo({
-    center: [centerLng, centerLat],
-    zoom: ZOOM,
-    speed: 0.8
-  });
+        const ZOOM = 9;
 
-  // 👉 Calcule le rayon automatique (pour que le cercle englobe toute la région)
-  const radius = computeRadiusFromBounds(minLat, minLng, maxLat, maxLng);
+        map.flyTo({
+          center: [centerLng, centerLat],
+          zoom: ZOOM,
+          speed: 0.8
+        });
 
-  // 👉 Dessine le cercle
-  drawCircle(centerLng, centerLat, radius);
-}
+        const radius = computeRadiusFromBounds(minLat, minLng, maxLat, maxLng);
+
+        drawCircle(centerLng, centerLat, radius);
+      }
     });
 
     initMap();
