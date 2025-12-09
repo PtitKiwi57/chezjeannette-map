@@ -147,7 +147,7 @@
 function initMap() {
   map = new mapboxgl.Map({
     container: "map",
-    style: "mapbox://styles/mapbox/light-v11",
+    style: "mapbox://styles/mapbox/streets-v12",
     center: [2.5, 47],
     zoom: 5
   });
@@ -193,12 +193,22 @@ function initMap() {
 
       // Transports
       try {
-        map.setLayoutProperty(
-          "transit-label",
-          "visibility",
-          z >= 12 ? "visible" : "none"
-        );
-        console.log("🚇 Transit visibility =", map.getLayoutProperty("transit-label", "visibility"));
+        const transitLayers = [
+  "transit-label",
+  "transit-labels",
+  "rail-label",
+  "railway-label",
+  "subway-label",
+  "bus-label",
+  "train-label"
+];
+
+transitLayers.forEach(id => {
+  if (map.getLayer(id)) {
+    map.setLayoutProperty(id, "visibility", z >= 12 ? "visible" : "none");
+  }
+});
+        console.log("🚇 Transit layers visibility updated.");
       } catch (e) {
         console.warn("⚠️ Transit layer introuvable :", e);
       }
