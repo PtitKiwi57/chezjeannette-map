@@ -141,10 +141,10 @@
     let markersById = {};
     let openPopup = null;
 
-    // -----------------------------
-    // INIT MAP
-    // -----------------------------
-    function initMap() {
+   // -----------------------------
+// INIT MAP
+// -----------------------------
+function initMap() {
   map = new mapboxgl.Map({
     container: "map",
     style: "mapbox://styles/mapbox/light-v11",
@@ -156,28 +156,53 @@
   setTimeout(() => map.resize(), 300);
   window.addEventListener("resize", () => map.resize());
 
-  // 🟣 Quand la map est chargée → activer POI selon zoom
+  // 🟣 Quand la map a fini de charger
   map.on("load", () => {
+    console.log("🟢 Mapbox LOAD OK");
 
+    // 🔍 Log des layers, une seule fois
+    console.log("📄 Liste des layers :", map.getStyle().layers);
+
+    // ⭐ Rendez les POI visibles (sinon on ne voit rien même si c’est activé)
+    try {
+      map.setPaintProperty("poi-label", "text-color", "#333");
+      map.setLayoutProperty("poi-label", "text-size", 14);
+
+      map.setPaintProperty("transit-label", "text-color", "#000");
+      map.setLayoutProperty("transit-label", "text-size", 14);
+    } catch (e) {
+      console.warn("⚠️ Impossible d’ajuster les propriétés des POI :", e);
+    }
+
+    // 🔵 Listener sur le zoom
     map.on("zoom", () => {
       const z = map.getZoom();
+      console.log("🔎 Zoom =", z);
 
-      // Commerces (cafés, magasins, restos…)
-      map.setLayoutProperty(
-        "poi-label",
-        "visibility",
-        z >= 12 ? "visible" : "none"
-      );
+      // Commerces
+      try {
+        map.setLayoutProperty(
+          "poi-label",
+          "visibility",
+          z >= 12 ? "visible" : "none"
+        );
+        console.log("🛍️ POI visibility =", map.getLayoutProperty("poi-label", "visibility"));
+      } catch (e) {
+        console.warn("⚠️ POI layer introuvable :", e);
+      }
 
-      // Transports (métro, gares…)
-      map.setLayoutProperty(
-        "transit-label",
-        "visibility",
-        z >= 12 ? "visible" : "none"
-      );
-
+      // Transports
+      try {
+        map.setLayoutProperty(
+          "transit-label",
+          "visibility",
+          z >= 12 ? "visible" : "none"
+        );
+        console.log("🚇 Transit visibility =", map.getLayoutProperty("transit-label", "visibility"));
+      } catch (e) {
+        console.warn("⚠️ Transit layer introuvable :", e);
+      }
     });
-
   });
 }
 
