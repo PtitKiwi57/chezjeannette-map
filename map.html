@@ -463,7 +463,7 @@
     // MESSAGE REÇUS DE WIX
     // -----------------------------
     window.addEventListener("message", (event) => {
-      const { type, habitats, habitatId, userLat, userLng,
+      const { type, habitats, habitat, habitatId, userLat, userLng,
               minLat, minLng, maxLat, maxLng } = event.data || {};
 
       if (type === "INIT_HABITATS") {
@@ -503,6 +503,23 @@
         const radius = computeRadiusFromBounds(minLat, minLng, maxLat, maxLng);
 
         drawCircle(centerLng, centerLat, radius);
+      }
+
+      if (type === "INIT_SINGLE" && habitat) {
+
+          // Effacer les anciens marqueurs
+          Object.values(markersById).forEach(m => m.remove());
+          markersById = {};
+      
+          // Afficher un seul habitat
+          renderHabitats([habitat]);
+      
+          // Zoom auto à fond sur le marker
+          map.flyTo({
+              center: [habitat.lng, habitat.lat],
+              zoom: 14,
+              speed: 0.8
+          });
       }
     });
 
