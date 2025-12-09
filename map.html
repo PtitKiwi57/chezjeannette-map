@@ -141,6 +141,68 @@
     let markersById = {};
     let openPopup = null;
 
+    // -----------------------------
+// DESSINER UN CERCLE
+// -----------------------------
+function drawCircle(lng, lat, radiusMeters = 400) {
+
+  // Si un cercle existe déjà → on le retire
+  if (map.getLayer("circle-layer")) map.removeLayer("circle-layer");
+  if (map.getLayer("circle-outline")) map.removeLayer("circle-outline");
+  if (map.getSource("circle-source")) map.removeSource("circle-source");
+
+  const points = 64;
+  const coords = [];
+  const R = 6371000; // Rayon de la Terre
+
+  for (let i = 0; i < points; i++) {
+    const angle = (i / points) * Math.PI * 2;
+    const dx = (radiusMeters * Math.cos(angle)) / R;
+    const dy = (radiusMeters * Math.sin(angle)) / R;
+
+    const newLng = lng + dx * (180 / Math.PI);
+    const newLat = lat + dy * (180 / Math.PI);
+
+    coords.push([newLng, newLat]);
+  }
+
+  coords.push(coords[0]); // fermer le cercle
+
+  map.addSource("circle-source", {
+    type: "geojson",
+    data: {
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [coords]
+      }
+    }
+  });
+
+  // Fond violet transparent
+  map.addLayer({
+    id: "circle-layer",
+    type: "fill",
+    source: "circle-source",
+    paint: {
+      "fill-color": "#7d7bff",
+      "fill-opacity": 0.18
+    }
+  });
+
+  // Bordure pointillée
+  map.addLayer({
+    id: "circle-outline",
+    type: "line",
+    source: "circle-source",
+    paint: {
+      "line-color": "#574bff",
+      "line-width": 2,
+      "line-dasharray": [2, 2]
+    }
+  });
+}
+
    // -----------------------------
 // INIT MAP
 // -----------------------------
@@ -391,15 +453,23 @@ transitLayers.forEach(id => {
 
       // 🔵 NEW : adapter le zoom à la zone filtrée (Tous / IDF / Bordeaux)
       if (type === "FIT_BOUNDS" && map && minLat != null) {
-        const bounds = [
-          [minLng, minLat],
-          [maxLng, maxLat]
-        ];
-        map.fitBounds(bounds, {
-          padding: 40,
-          maxZoom: 9
-        });
-      }
+  const bounds = [
+    [minLng, minLat],
+    [maxLng, maxLat]
+  ];
+
+  map.fitBounds(bounds, {
+    padding: 40,
+    maxZoom: 9
+  });
+
+  // 👉 CALCUL DU CENTRE DE LA RÉGION
+  const centerLat = (minLat + maxLat) / 2;
+  const centerLng = (minLng + maxLng) / 2;
+
+  // 👉 AJOUT DU CERCLE (5 minutes à pied ≈ 400m)
+  drawCircle(centerLng, centerLat, 400);
+}
     });
 
     initMap();
