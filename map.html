@@ -141,6 +141,20 @@
     let markersById = {};
     let openPopup = null;
 
+    function computeRadiusFromBounds(minLat, minLng, maxLat, maxLng) {
+  const centerLat = (minLat + maxLat) / 2;
+  const centerLng = (minLng + maxLng) / 2;
+
+  // distance lat max
+  const dLat = Math.abs(centerLat - maxLat) * (Math.PI / 180) * 6371000;
+  
+  // distance lng max
+  const dLng = Math.abs(centerLng - maxLng) * (Math.PI / 180) * 6371000 * Math.cos(centerLat * Math.PI / 180);
+
+  // rayon = plus grande distance
+  return Math.max(dLat, dLng);
+}
+
     // -----------------------------
 // DESSINER UN CERCLE
 // -----------------------------
@@ -467,8 +481,8 @@ transitLayers.forEach(id => {
   const centerLat = (minLat + maxLat) / 2;
   const centerLng = (minLng + maxLng) / 2;
 
-  // 👉 AJOUT DU CERCLE (5 minutes à pied ≈ 400m)
-  drawCircle(centerLng, centerLat, 400);
+  const radius = computeRadiusFromBounds(minLat, minLng, maxLat, maxLng);
+drawCircle(centerLng, centerLat, radius);
 }
     });
 
