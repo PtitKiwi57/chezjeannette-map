@@ -128,6 +128,7 @@
 
     .popup-link-wrapper {
   display: block;
+  cursor: pointer;
   text-decoration: none !important;
   color: inherit !important;
 }
@@ -328,8 +329,8 @@ transitLayers.forEach(id => {
       habitats.forEach(h => {
 
         // 👇 couleur
-        let color = "#6B4EFF";
-        if (h.status === "A Venir") color = "#FFA027";
+        let color = "#3C33C3";
+        if (h.status === "A Venir") color = "#FF8657";
         if (h.colorBox) color = h.colorBox;
 
         // marker
@@ -339,7 +340,7 @@ transitLayers.forEach(id => {
 
         // popup
        const popupContent = `
-<a href="${h.url}" class="popup-link-wrapper">
+<div class="popup-link-wrapper" onclick="window.top.location.href='${h.url}'">
   <div class="popup-card">
 
     ${h.image ? `<img src="${h.image}" class="popup-image" />` : ""}
@@ -373,14 +374,14 @@ transitLayers.forEach(id => {
 
       <div class="popup-footer">
         <div class="popup-status"
-             style="background:${h.status === 'Ouvert' ? '#2f2cd6' : '#FFA027'};">
+             style="background:${h.status === 'Ouvert' ? '#3C33C3' : '#FF8657'};">
           ${h.status === "Ouvert" ? "Ouvert" : "À venir"}
         </div>
       </div>
 
     </div>
   </div>
-</a>
+</div>
 `;
 
         const popup = new mapboxgl.Popup({ offset: 12 }).setHTML(popupContent);
